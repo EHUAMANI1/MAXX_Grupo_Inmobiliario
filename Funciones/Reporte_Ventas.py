@@ -7,6 +7,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 ENTRADA_DATOS = BASE_DIR / "Flujo" / "Input" / "Reporte de Ventas"
 SALIDA_DATOS = BASE_DIR / "Flujo" / "Output" / "Ingresos.csv"
+ 
 
 DIC_UNIDADES = {
     "Dpto": "Departamento",
