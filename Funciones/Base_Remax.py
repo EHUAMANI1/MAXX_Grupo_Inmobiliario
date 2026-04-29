@@ -1,96 +1,76 @@
-import requests
 import pandas as pd
-import time
 from pathlib import Path
+from bs4 import BeautifulSoup
+import re
 
-# ==============================
-# RUTA DE SALIDA
-# ==============================
 BASE_DIR = Path(__file__).resolve().parent.parent
-SALIDA_LISTA = BASE_DIR / "Flujo" / "Output" / "Base_Remax.xlsx"
-SALIDA_LISTA.parent.mkdir(parents=True, exist_ok=True)
+ENTRADA_LISTA_PRECIOS = BASE_DIR / "Flujo" / "Input"
+SALIDA_LISTA = BASE_DIR / "Flujo" / "Output" / "Base_agentes_re_max.xlsx"
 
-agentes = []
-page = 1
+datos = []
 
-session = requests.Session()
+def limpiar(texto):
+    return re.sub(r"\s+", " ", texto).strip() if texto else ""
 
-headers = {
-    "User-Agent": "Mozilla/5.0"
-}
+for archivo in ENTRADA_LISTA_PRECIOS.glob("*.html"):
 
-while True:
-    url = f"https://www.remax.pe/web/agents/?&page={page}"
-    print(f"Procesando página {page}")
-
-    response = session.get(url, headers=headers)
-
-    # ==============================
-    # DETECTAR BLOQUEO O ERROR
-    # ==============================
-    if response.status_code != 200:
-        print("Bloqueado o error. Fin.")
-        break
-
-    html = response.text
-
-    # ==============================
-    # DETECTAR SI YA NO HAY DATOS
-    # ==============================
-    if "agent" not in html.lower() and "@" not in html:
-        print("No hay más datos. Fin.")
-        break
-
-    # ==============================
-    # EXTRAER DE FORMA SIMPLE (fallback)
-    # ==============================
-    # Nota: sin API real, solo extracción básica del HTML
-    from bs4 import BeautifulSoup
-
+    html = archivo.read_text(encoding="utf-8", errors="ignore")
     soup = BeautifulSoup(html, "html.parser")
 
-    cards = soup.find_all("div")
+    telefonos = soup.select("a[href^='tel:']")
 
-    nuevos = 0
+    for tel in telefonos:
+        telefono = tel.get("href", "").replace("tel:", "").strip()
+        telefono = re.sub(r"\D", "", telefono)
 
-    for c in cards:
-        text = c.get_text(" ", strip=True)
+        # subimos al contenedor del agente
+        card = tel
+        for _ in range(10):
+            if card.parent:
+                card = card.parent
 
-        if "@" in text or "+" in text:
-            parts = text.split()
+            texto = limpiar(card.get_text(" "))
 
-            nombre = parts[0] if len(parts) > 0 else ""
-            oficina = parts[1] if len(parts) > 1 else ""
+            # cuando el bloque ya tiene suficiente info, paramos
+            if telefono in texto and len(texto) > 50:
+                break
 
-            telefono = ""
-            email = ""
+        texto = limpiar(card.get_text(" "))
 
-            for p in parts:
-                if "@" in p:
-                    email = p
-                if "+" in p:
-                    telefono = p
+        correo_match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", texto)
+        correo = correo_match.group(0) if correo_match else ""
 
-            agentes.append([nombre, oficina, telefono, email])
-            nuevos += 1
+        # buscar nombre en etiquetas comunes
+        nombre = ""
+        for tag in card.find_all(["h1", "h2", "h3", "h4", "h5", "strong", "b", "span", "p"]):
+            t = limpiar(tag.get_text())
+            if (
+                t
+                and not re.search(r"\d|@|RE/MAX|REMAX|AGENTE|ASESOR|CONTACTAR|VER", t, re.I)
+                and len(t.split()) >= 2
+            ):
+                nombre = t
+                break
 
-    if nuevos == 0:
-        print("Página sin datos reales. Fin.")
-        break
+        grupo = ""
+        grupo_match = re.search(r"(RE/MAX\s+[A-Za-zÁÉÍÓÚÑáéíóúñ0-9\s]+)", texto, re.I)
+        if grupo_match:
+            grupo = limpiar(grupo_match.group(1))
 
-    page += 1
-    time.sleep(3)  # evitar bloqueos
+        datos.append({
+            "Archivo": archivo.name,
+            "Nombre": nombre,
+            "Correo": correo,
+            "Telefono": telefono,
+            "Grupo": grupo,
+            "Texto extraido": texto
+        })
 
-# ==============================
-# GUARDAR
-# ==============================
-df = pd.DataFrame(agentes, columns=["Nombre", "Oficina", "Teléfono", "Email"])
-df.drop_duplicates(inplace=True)
+df = pd.DataFrame(datos).drop_duplicates(subset=["Telefono"])
 
+SALIDA_LISTA.parent.mkdir(parents=True, exist_ok=True)
 df.to_excel(SALIDA_LISTA, index=False)
 
-print("===================================")
-print("Base generada")
-print(f"Total registros: {len(df)}")
-print(f"Archivo: {SALIDA_LISTA}")
-print("===================================")
+print("Registros encontrados:", len(df))
+print("Excel generado:", SALIDA_LISTA)
+print(df.head())
