@@ -11,7 +11,7 @@ base_dir = os.getcwd()
 # Agregar la carpeta padre al path para poder importar módulos desde allí
 base_scr = sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-anio_inicio = 2020  #Año de inicio
+anio_inicio = 2023  #Año de inicio
 
 from Conexiones.connection import RESULTADO_TIPO_CAMBIO
 
