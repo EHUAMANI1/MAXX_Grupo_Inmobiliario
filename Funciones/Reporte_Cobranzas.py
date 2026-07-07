@@ -1,5 +1,5 @@
 # Programa para Generar Reporte de Cobranzas
-# Creado por Eduardo Miguel Huamani Acosta                               06/07/26
+# Creado por Eduardo Miguel Huamani Acosta                                  06/07/26
 
 import pandas as pd
 from pathlib import Path
@@ -8,9 +8,8 @@ import unicodedata
 
 import Descarga_Cobranzas as descarga
 
-
-FECHA_INICIO_REPORTE = "01/06/2024"
-FECHA_FIN_REPORTE = "30/06/2030"
+FECHA_INICIO_REPORTE = "01/06/2024" # Fecha de Inicio del Reporte
+FECHA_FIN_REPORTE = "30/06/2030"  # Fecha final
 
 EJECUTAR_DESCARGA = True
 
@@ -431,9 +430,6 @@ def aplicar_formatos_reporte_ventas(ruta_excel, nombre_hoja):
 
     wb.save(ruta_excel)
 
-print("====================================")
-print("GENERACION DE BASE DE DATOS Y RESUMEN")
-print("====================================")
 
 def consolidar_cobranzas():
     archivos_csv = sorted(ENTRADA_LISTA_PRECIOS.glob("Cobranzas_*.csv"))
@@ -486,18 +482,9 @@ def consolidar_cobranzas():
 
     reporte_ventas = generar_reporte_ventas_por_proyecto(base_consolidada)
 
-    ruta_csv = SALIDA_LISTA / "Base_Cobranzas_Consolidada.csv"
     ruta_excel = SALIDA_LISTA / "Base_Cobranzas_Consolidada.xlsx"
 
     ruta_reporte_ventas_excel = SALIDA_LISTA / "Reporte_Ventas_Por_Proyecto.xlsx"
-
-    base_consolidada.to_csv(
-        ruta_csv,
-        index=False,
-        encoding="utf-8-sig",
-        date_format="%d/%m/%Y",
-        float_format="%.2f"
-    )
 
     with pd.ExcelWriter(ruta_excel, engine="openpyxl") as writer:
         base_consolidada.to_excel(
@@ -527,12 +514,8 @@ def consolidar_cobranzas():
     print("====================================")
     print("CONSOLIDACIÓN TERMINADA")
     print("====================================")
-    print("✅ Archivo CSV generado:")
-    print("✅ Reporte ventas generado:")
-    print("Total de filas consolidadas:")
-    print(len(base_consolidada))
-    print("Total de columnas finales:")
-    print(len(base_consolidada.columns))
+    print("✅ Base de datos generado con exito:")
+    print("✅ Reporte ventas generado con exito")
 
     return base_consolidada, reporte_ventas
 

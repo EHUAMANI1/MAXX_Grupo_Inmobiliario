@@ -1,5 +1,5 @@
 # Programa para descargar los reportes de Cobranzas
-# Creado por Eduardo Miguel Huamani Acosta        06/07/26
+# Creado por Eduardo Miguel Huamani Acosta              06/07/26
 
 from pathlib import Path
 from datetime import datetime, date
@@ -66,7 +66,7 @@ def generar_rangos_por_anio(fecha_inicio_txt: str, fecha_fin_txt: str):
     fin = convertir_fecha(fecha_fin_txt)
 
     if inicio > fin:
-        raise ValueError("La fecha de inicio no puede ser mayor que la fecha de fin.")
+        raise ValueError("❌ La fecha de inicio no puede ser mayor que la fecha de fin.")
 
     rangos = []
 
@@ -390,8 +390,7 @@ def main():
         driver.get(LOGIN_URL)
 
         input(
-            "\nInicia sesión manualmente en Evolta. "
-            "Cuando ya estés dentro del CRM, presiona ENTER aquí..."
+            "\nInicia sesión en Evolta, presiona ENTER aquí... "
         )
 
         driver.get(REPORTE_COBRANZA_URL)
